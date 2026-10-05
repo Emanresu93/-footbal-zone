@@ -288,5 +288,292 @@
     ⚽ FOOTBALL ZONE · Můj vlastní fotbalový web
   </footer>
 
-</body>
+<!-- ANKETA -->
+<style>
+  .poll {
+    margin-top: 35px;
+    background: #111a14;
+    border: 1px solid #293c2e;
+    border-radius: 15px;
+    padding: 25px;
+    max-width: 800px;
+  }
+
+  .poll h3 {
+    font-size: 26px;
+    margin-bottom: 8px;
+  }
+
+  .poll-subtitle {
+    color: #bdc9bf;
+    margin-bottom: 25px;
+  }
+
+  .vote-player {
+    margin-bottom: 20px;
+  }
+
+  .vote-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 8px;
+  }
+
+  .vote-name {
+    font-weight: bold;
+  }
+
+  .vote-button {
+    background: #65ff8f;
+    color: #08110b;
+    border: none;
+    border-radius: 7px;
+    padding: 9px 14px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  .vote-button:hover {
+    transform: scale(1.03);
+  }
+
+  .vote-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .vote-bar {
+    height: 12px;
+    background: #293c2e;
+    border-radius: 20px;
+    overflow: hidden;
+  }
+
+  .vote-fill {
+    height: 100%;
+    width: 0%;
+    background: #65ff8f;
+    transition: width 0.5s;
+  }
+
+  .vote-info {
+    color: #bdc9bf;
+    font-size: 13px;
+    margin-top: 5px;
+  }
+
+  #voteMessage {
+    margin-top: 20px;
+    color: #65ff8f;
+    font-weight: bold;
+  }
+</style>
+
+<section class="section" id="anketa">
+  <div class="poll">
+
+    <h3>🏆 Kdo je nejlepší hráč?</h3>
+
+    <p class="poll-subtitle">
+      Hlasuj pro svého favorita!
+    </p>
+
+    <div class="vote-player">
+      <div class="vote-row">
+        <span class="vote-name">🇵🇹 Cristiano Ronaldo</span>
+        <button class="vote-button" onclick="vote('Cristiano Ronaldo')">
+          HLASOVAT
+        </button>
+      </div>
+
+      <div class="vote-bar">
+        <div class="vote-fill" id="bar-Ronaldo"></div>
+      </div>
+
+      <div class="vote-info" id="info-Ronaldo">
+        0 hlasů
+      </div>
+    </div>
+
+    <div class="vote-player">
+      <div class="vote-row">
+        <span class="vote-name">🇦🇷 Lionel Messi</span>
+        <button class="vote-button" onclick="vote('Lionel Messi')">
+          HLASOVAT
+        </button>
+      </div>
+
+      <div class="vote-bar">
+        <div class="vote-fill" id="bar-Messi"></div>
+      </div>
+
+      <div class="vote-info" id="info-Messi">
+        0 hlasů
+      </div>
+    </div>
+
+    <div class="vote-player">
+      <div class="vote-row">
+        <span class="vote-name">🇧🇷 Neymar Jr.</span>
+        <button class="vote-button" onclick="vote('Neymar Jr.')">
+          HLASOVAT
+        </button>
+      </div>
+
+      <div class="vote-bar">
+        <div class="vote-fill" id="bar-Neymar"></div>
+      </div>
+
+      <div class="vote-info" id="info-Neymar">
+        0 hlasů
+      </div>
+    </div>
+
+    <div id="voteMessage"></div>
+
+  </div>
+</section>
+
+<script>
+  const SUPABASE_URL =
+    'https://cgmuaudnybwoqbxulncx.supabase.co';
+
+  const SUPABASE_KEY =
+    'sb_publishable_k-qDrJNr2ERnS7iKgWOxaA_x0RKwglh';
+
+  const players = [
+    'Cristiano Ronaldo',
+    'Lionel Messi',
+    'Neymar Jr.'
+  ];
+
+  async function loadVotes() {
+
+    const response = await fetch(
+      SUPABASE_URL +
+      '/rest/v1/votes?select=player',
+      {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY
+        }
+      }
+    );
+
+    if (!response.ok) {
+      console.error(await response.text());
+      return;
+    }
+
+    const votes = await response.json();
+
+    const counts = {
+      'Cristiano Ronaldo': 0,
+      'Lionel Messi': 0,
+      'Neymar Jr.': 0
+    };
+
+    votes.forEach(vote => {
+      if (counts[vote.player] !== undefined) {
+        counts[vote.player]++;
+      }
+    });
+
+    const total =
+      counts['Cristiano Ronaldo'] +
+      counts['Lionel Messi'] +
+      counts['Neymar Jr.'];
+
+    updatePlayer(
+      'Ronaldo',
+      counts['Cristiano Ronaldo'],
+      total
+    );
+
+    updatePlayer(
+      'Messi',
+      counts['Lionel Messi'],
+      total
+    );
+
+    updatePlayer(
+      'Neymar',
+      counts['Neymar Jr.'],
+      total
+    );
+  }
+
+  function updatePlayer(name, count, total) {
+
+    const percentage =
+      total === 0 ? 0 : (count / total) * 100;
+
+    document.getElementById(
+      'bar-' + name
+    ).style.width = percentage + '%';
+
+    document.getElementById(
+      'info-' + name
+    ).textContent =
+      count + ' hlasů · ' +
+      percentage.toFixed(0) + '%';
+  }
+
+  async function vote(player) {
+
+    if (localStorage.getItem('footballZoneVoted')) {
+      document.getElementById('voteMessage').textContent =
+        '⚠️ Z tohoto zařízení už bylo hlasováno.';
+      return;
+    }
+
+    const response = await fetch(
+      SUPABASE_URL + '/rest/v1/votes',
+      {
+        method: 'POST',
+
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Prefer': 'return=minimal'
+        },
+
+        body: JSON.stringify({
+          player: player
+        })
+      }
+    );
+
+    if (!response.ok) {
+      console.error(await response.text());
+
+      document.getElementById('voteMessage').textContent =
+        '❌ Hlas se nepodařilo uložit.';
+
+      return;
+    }
+
+    localStorage.setItem(
+      'footballZoneVoted',
+      'true'
+    );
+
+    document.getElementById('voteMessage').textContent =
+      '✅ Díky za hlas!';
+
+    document.querySelectorAll('.vote-button')
+      .forEach(button => {
+        button.disabled = true;
+      });
+
+    loadVotes();
+  }
+
+  loadVotes();
+
+  setInterval(loadVotes, 10000);
+</script></body>
 </html>
